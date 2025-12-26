@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subjects Management - Timetable System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-brand gradient-text">📅 Timetable Manager</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+            <a href="{{ url_for('teachers') }}">👨‍🏫 Teachers</a>
+            <a href="{{ url_for('subjects') }}" class="active">📚 Subjects</a>
+            <a href="{{ url_for('rooms') }}">🏛️ Rooms</a>
+            <a href="{{ url_for('classes') }}">🎓 Classes</a>
+            <a href="{{ url_for('generate_timetable') }}">⚡ Generate</a>
+            <a href="{{ url_for('analytics') }}">📊 Analytics</a>
+            <a href="{{ url_for('settings') }}">⚙️ Settings</a>
+            <a href="{{ url_for('logout') }}" style="color: #f44336;">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header fade-in-up">
+            <div>
+                <h1 class="gradient-text">📚 Subjects Management</h1>
+                <p style="color: white; margin-top: 8px;">Manage course offerings</p>
+            </div>
+            <a href="{{ url_for('add_subject') }}" class="btn btn-primary glow-on-hover">
+                ➕ Add New Subject
+            </a>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs glass fade-in-up" style="animation-delay: 0.1s;">
+            <button class="tab-btn active" onclick="filterByType('all')">
+                📋 All Subjects
+            </button>
+            <button class="tab-btn" onclick="filterByType('Theory')">
+                📖 Theory
+            </button>
+            <button class="tab-btn" onclick="filterByType('Practical')">
+                🔬 Practical
+            </button>
+        </div>
+
+        <!-- Subjects Grid -->
+        <div class="subjects-grid fade-in-up" style="animation-delay: 0.2s;">
+            {% for subject in subjects %}
+            <div class="subject-card glass zoom-hover" data-type="{{ subject['theory_practical'] }}">
+                <div class="subject-header">
+                    <div class="subject-icon">
+                        {% if subject['theory_practical'] == 'Theory' %}📖{% else %}🔬{% endif %}
+                    </div>
+                    <div class="subject-type-badge {{ 'theory' if subject['theory_practical'] == 'Theory' else 'practical' }}">
+                        {{ subject['theory_practical'] }}
+                    </div>
+                </div>
+                
+                <h3 class="subject-name">{{ subject['name'] }}</h3>
+                <div class="subject-code">{{ subject['code'] }}</div>
+                
+                <div class="subject-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Department:</span>
+                        <span class="detail-value">{{ subject['department'] }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Credits:</span>
+                        <span class="detail-value">{{ subject['credits'] }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Hours/Week:</span>
+                        <span class="detail-value">{{ subject['hours_per_week'] }}</span>
+                    </div>
+                </div>
+                
+                <div class="subject-actions">
+                    <button onclick="deleteSubject({{ subject['id'] }}, '{{ subject['name'] }}')" 
+                            class="btn btn-danger btn-sm">
+                        🗑️ Delete
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if not subjects %}
+        <div class="empty-state glass fade-in-up">
+            <div class="empty-icon">📚</div>
+            <h2>No Subjects Added Yet</h2>
+            <p>Start by adding your first course</p>
+            <a href="{{ url_for('add_subject') }}" class="btn btn-primary">
+                ➕ Add First Subject
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function filterByType(type) {
+            const cards = document.querySelectorAll('.subject-card');
+            const tabs = document.querySelectorAll('.tab-btn');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            cards.forEach(card => {
+                if (type === 'all' || card.dataset.type === type) {
+                    card.style.display = 'block';
+                    card.style.animation = 'fadeInScale 0.5s ease-out';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function deleteSubject(id, name) {
+            if (confirm(`Are you sure you want to delete "${name}"?\n\nThis will affect all timetable entries with this subject.`)) {
+                fetch(`/subjects/delete/${id}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Subject deleted successfully!', 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification('Error: ' + data.error, 'error');
+                    }
+                });
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type} slide-in-right`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                background: ${type === 'success' ? '#4caf50' : '#f44336'};
+                color: white;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                z-index: 10000;
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+    </script>
+
+    <style>
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            border: 2px solid transparent;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .subject-card {
+            padding: 25px;
+            border-radius: 20px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s;
+        }
+
+        .subject-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .subject-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .subject-icon {
+            font-size: 48px;
+            animation: float-icon 3s ease-in-out infinite;
+        }
+
+        .subject-type-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .subject-type-badge.theory {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            color: #1976d2;
+        }
+
+        .subject-type-badge.practical {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            color: #2e7d32;
+        }
+
+        .subject-name {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .subject-code {
+            display: inline-block;
+            padding: 4px 12px;
+            background: linear-gradient(135deg, #f5f5f5, #e8e8e8);
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .subject-details {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 10px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .detail-label {
+            color: #999;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .subject-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336, #e57373);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .subjects-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>

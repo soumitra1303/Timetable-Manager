@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ teacher['name'] }} - Schedule</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-brand gradient-text">📅 Timetable Manager</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+            <a href="{{ url_for('teachers') }}" class="active">👨‍🏫 Teachers</a>
+            <a href="{{ url_for('subjects') }}">📚 Subjects</a>
+            <a href="{{ url_for('rooms') }}">🏛️ Rooms</a>
+            <a href="{{ url_for('classes') }}">🎓 Classes</a>
+            <a href="{{ url_for('logout') }}" style="color: #f44336;">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="teacher-header glass fade-in-up">
+            <div class="teacher-info-header">
+                <div class="teacher-avatar">{{ teacher['name'][0] }}</div>
+                <div class="teacher-details">
+                    <h1 class="gradient-text">{{ teacher['name'] }}</h1>
+                    <p>📧 {{ teacher['email'] or 'No email' }} • 📱 {{ teacher['phone'] or 'No phone' }}</p>
+                    <p>🏢 {{ teacher['department'] }} • 🎯 {{ teacher['specialization'] }}</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button onclick="window.print()" class="btn btn-secondary">
+                    🖨️ Print
+                </button>
+                <a href="{{ url_for('edit_teacher', id=teacher['id']) }}" class="btn btn-primary glow-on-hover">
+                    ✏️ Edit Teacher
+                </a>
+            </div>
+        </div>
+
+        <!-- Weekly Stats -->
+        <div class="week-stats glass fade-in-up" style="animation-delay: 0.2s;">
+            <div class="stat-item">
+                <div class="stat-icon">📚</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ entries|length }}</div>
+                    <div class="stat-label">Total Classes</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon">⏰</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ entries|length }}</div>
+                    <div class="stat-label">Hours/Week</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon">📅</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ days|length }}</div>
+                    <div class="stat-label">Working Days</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon">🏛️</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ entries|map(attribute='room_number')|unique|list|length }}</div>
+                    <div class="stat-label">Different Rooms</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timetable -->
+        <div class="timetable-card glass fade-in-up" style="animation-delay: 0.3s;">
+            <h2>📅 Weekly Schedule</h2>
+            
+            <div class="timetable-grid">
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th class="time-col">⏰ Time</th>
+                            {% for day in days %}
+                            <th class="day-col">{{ day }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slot in time_slots %}
+                        <tr>
+                            <td class="time-slot">
+                                <div class="time-range">
+                                    <div>{{ slot['start_time'] }}</div>
+                                    <div class="time-divider">—</div>
+                                    <div>{{ slot['end_time'] }}</div>
+                                </div>
+                            </td>
+                            {% for day in days %}
+                            <td class="class-cell">
+                                {% set entry = timetable_grid[day][slot['slot_number']] %}
+                                {% if entry %}
+                                <div class="class-entry teacher-entry zoom-hover">
+                                    <div class="subject-name">{{ entry['subject_name'] }}</div>
+                                    <div class="class-name">🎓 {{ entry['class_name'] }}</div>
+                                    <div class="room-info">🏛️ {{ entry['room_number'] }}</div>
+                                </div>
+                                {% else %}
+                                <div class="free-slot">Free</div>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Day-wise Breakdown -->
+        <div class="daily-breakdown glass fade-in-up" style="animation-delay: 0.4s;">
+            <h2>📊 Day-wise Breakdown</h2>
+            <div class="breakdown-grid">
+                {% for day in days %}
+                <div class="day-card">
+                    <h3>{{ day }}</h3>
+                    <div class="day-count">
+                        {% set day_classes = [] %}
+                        {% for slot in time_slots %}
+                            {% if timetable_grid[day][slot['slot_number']] %}
+                                {% set _ = day_classes.append(1) %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ day_classes|length }} classes
+                    </div>
+                    <div class="day-progress">
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" 
+                                 style="width: {{ (day_classes|length / time_slots|length * 100)|int }}%;"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .teacher-header {
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .teacher-info-header {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .teacher-avatar {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            font-weight: 700;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .teacher-details h1 {
+            margin-bottom: 10px;
+        }
+
+        .teacher-details p {
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .week-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 15px;
+            transition: all 0.3s;
+        }
+
+        .stat-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            font-size: 42px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+        }
+
+        .teacher-entry {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(102, 187, 106, 0.05));
+            border-left: 4px solid #4caf50;
+        }
+
+        .class-name {
+            font-size: 12px;
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .free-slot {
+            text-align: center;
+            color: #ccc;
+            font-size: 14px;
+            padding: 15px;
+        }
+
+        .daily-breakdown {
+            padding: 30px;
+            border-radius: 20px;
+        }
+
+        .daily-breakdown h2 {
+            color: #333;
+            margin-bottom: 25px;
+        }
+
+        .breakdown-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .day-card {
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 15px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .day-card:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .day-card h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .day-count {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .day-progress {
+            margin-top: 15px;
+        }
+
+        @media print {
+            .navbar, .header-actions {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .teacher-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .teacher-info-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .week-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>

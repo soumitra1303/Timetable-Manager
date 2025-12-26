@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teachers Management - Timetable System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-brand gradient-text">📅 Timetable Manager</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+            <a href="{{ url_for('teachers') }}" class="active">👨‍🏫 Teachers</a>
+            <a href="{{ url_for('subjects') }}">📚 Subjects</a>
+            <a href="{{ url_for('rooms') }}">🏛️ Rooms</a>
+            <a href="{{ url_for('classes') }}">🎓 Classes</a>
+            <a href="{{ url_for('generate_timetable') }}">⚡ Generate</a>
+            <a href="{{ url_for('analytics') }}">📊 Analytics</a>
+            <a href="{{ url_for('settings') }}">⚙️ Settings</a>
+            <a href="{{ url_for('logout') }}" style="color: #f44336;">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header fade-in-up">
+            <div>
+                <h1 class="gradient-text">👨‍🏫 Teachers Management</h1>
+                <p style="color: white; margin-top: 8px;">Manage your faculty members</p>
+            </div>
+            <a href="{{ url_for('add_teacher') }}" class="btn btn-primary glow-on-hover">
+                ➕ Add New Teacher
+            </a>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="search-section glass fade-in-up" style="animation-delay: 0.1s;">
+            <input type="text" id="searchInput" placeholder="🔍 Search teachers..." 
+                   class="search-input" onkeyup="filterTable()">
+            <select id="deptFilter" class="category-filter" onchange="filterTable()">
+                <option value="">All Departments</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Physics">Physics</option>
+                <option value="Electronics">Electronics</option>
+            </select>
+        </div>
+
+        <!-- Teachers Table -->
+        <div class="table-container glass fade-in-up" style="animation-delay: 0.2s;">
+            <table class="inventory-table" id="teachersTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>👤 Name</th>
+                        <th>📧 Email</th>
+                        <th>📱 Phone</th>
+                        <th>🏢 Department</th>
+                        <th>🎯 Specialization</th>
+                        <th>⏰ Max Hours/Day</th>
+                        <th>🗓️ Preferred Days</th>
+                        <th>⚡ Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for teacher in teachers %}
+                    <tr class="zoom-hover">
+                        <td><span class="badge">{{ teacher['id'] }}</span></td>
+                        <td><strong>{{ teacher['name'] }}</strong></td>
+                        <td>{{ teacher['email'] or 'N/A' }}</td>
+                        <td>{{ teacher['phone'] or 'N/A' }}</td>
+                        <td><span class="badge">{{ teacher['department'] }}</span></td>
+                        <td>{{ teacher['specialization'] }}</td>
+                        <td><strong>{{ teacher['max_hours_per_day'] }}</strong> hrs</td>
+                        <td>
+                            <small style="color: #666;">
+                                {{ teacher['preferred_days'][:20] }}...
+                            </small>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ url_for('teacher_timetable', teacher_id=teacher['id']) }}" 
+                                   class="btn-edit" title="View Timetable">📅</a>
+                                <a href="{{ url_for('edit_teacher', id=teacher['id']) }}" 
+                                   class="btn-edit" title="Edit">✏️</a>
+                                <button onclick="deleteTeacher({{ teacher['id'] }}, '{{ teacher['name'] }}')" 
+                                        class="btn-delete" title="Delete">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if not teachers %}
+        <div class="empty-state glass fade-in-up" style="animation-delay: 0.3s;">
+            <div class="empty-icon">👨‍🏫</div>
+            <h2>No Teachers Added Yet</h2>
+            <p>Start by adding your first faculty member</p>
+            <a href="{{ url_for('add_teacher') }}" class="btn btn-primary">
+                ➕ Add First Teacher
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function filterTable() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const deptFilter = document.getElementById('deptFilter').value;
+            const table = document.getElementById('teachersTable');
+            const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const name = row.cells[1].textContent.toLowerCase();
+                const email = row.cells[2].textContent.toLowerCase();
+                const dept = row.cells[4].textContent;
+                
+                const matchesSearch = name.includes(searchInput) || email.includes(searchInput);
+                const matchesDept = !deptFilter || dept === deptFilter;
+                
+                row.style.display = (matchesSearch && matchesDept) ? '' : 'none';
+            }
+        }
+
+        function deleteTeacher(id, name) {
+            if (confirm(`Are you sure you want to delete ${name}?\n\nThis will remove all associated timetable entries.`)) {
+                fetch(`/teachers/delete/${id}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Teacher deleted successfully!', 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification('Error: ' + data.error, 'error');
+                    }
+                });
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type} slide-in-right`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                background: ${type === 'success' ? '#4caf50' : '#f44336'};
+                color: white;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                z-index: 10000;
+                animation: slideInRight 0.5s;
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+    </script>
+
+    <style>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .search-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 40px;
+            border-radius: 20px;
+            margin-top: 30px;
+        }
+
+        .empty-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        .empty-state h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .search-section {
+                flex-direction: column;
+            }
+        }
+    </style>
+</body>
+</html>

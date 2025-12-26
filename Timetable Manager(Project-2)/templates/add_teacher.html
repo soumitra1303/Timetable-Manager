@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Teacher - Timetable System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-brand gradient-text">📅 Timetable Manager</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+            <a href="{{ url_for('teachers') }}" class="active">👨‍🏫 Teachers</a>
+            <a href="{{ url_for('subjects') }}">📚 Subjects</a>
+            <a href="{{ url_for('rooms') }}">🏛️ Rooms</a>
+            <a href="{{ url_for('classes') }}">🎓 Classes</a>
+            <a href="{{ url_for('logout') }}" style="color: #f44336;">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="form-container glass zoom-in">
+            <h1 class="gradient-text">➕ Add New Teacher</h1>
+            <p style="color: #666; margin-bottom: 30px;">Register a new faculty member</p>
+            
+            <form method="POST" class="item-form" id="teacherForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>👤 Full Name *</label>
+                        <input type="text" name="name" required placeholder="Dr. John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label>📧 Email Address</label>
+                        <input type="email" name="email" placeholder="john.doe@example.com">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>📱 Phone Number</label>
+                        <input type="tel" name="phone" placeholder="+91 98765 43210">
+                    </div>
+                    <div class="form-group">
+                        <label>🏢 Department *</label>
+                        <select name="department" required>
+                            <option value="">Select Department</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Physics">Physics</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Mechanical">Mechanical Engineering</option>
+                            <option value="Civil">Civil Engineering</option>
+                            <option value="Electrical">Electrical Engineering</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>🎯 Specialization</label>
+                        <input type="text" name="specialization" 
+                               placeholder="e.g., Data Structures, Algorithms">
+                    </div>
+                    <div class="form-group">
+                        <label>⏰ Max Hours Per Day</label>
+                        <input type="number" name="max_hours_per_day" value="6" 
+                               min="1" max="10" id="maxHoursDay">
+                        <small style="color: #999;">Recommended: 4-6 hours</small>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>📅 Max Hours Per Week</label>
+                        <input type="number" name="max_hours_per_week" value="30" 
+                               min="1" max="50" id="maxHoursWeek">
+                        <small style="color: #999;">Recommended: 24-30 hours</small>
+                    </div>
+                    <div class="form-group">
+                        <label>🗓️ Preferred Days</label>
+                        <select name="preferred_days" id="preferredDays">
+                            <option value="Monday,Tuesday,Wednesday,Thursday,Friday">All Weekdays</option>
+                            <option value="Monday,Tuesday,Wednesday">Mon, Tue, Wed</option>
+                            <option value="Thursday,Friday">Thu, Fri</option>
+                            <option value="Monday,Wednesday,Friday">Mon, Wed, Fri</option>
+                            <option value="Tuesday,Thursday">Tue, Thu</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Visual Hours Preview -->
+                <div class="hours-preview glass">
+                    <h3>📊 Workload Preview</h3>
+                    <div class="preview-grid">
+                        <div class="preview-item">
+                            <div class="preview-label">Daily Load</div>
+                            <div class="preview-value" id="dailyPreview">6 hours</div>
+                            <div class="progress-bar">
+                                <div class="progress-bar-fill" id="dailyProgress" style="width: 60%;"></div>
+                            </div>
+                        </div>
+                        <div class="preview-item">
+                            <div class="preview-label">Weekly Load</div>
+                            <div class="preview-value" id="weeklyPreview">30 hours</div>
+                            <div class="progress-bar">
+                                <div class="progress-bar-fill" id="weeklyProgress" style="width: 60%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary glow-on-hover">
+                        💾 Save Teacher
+                    </button>
+                    <a href="{{ url_for('teachers') }}" class="btn btn-secondary">
+                        ❌ Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Live preview updates
+        const maxHoursDay = document.getElementById('maxHoursDay');
+        const maxHoursWeek = document.getElementById('maxHoursWeek');
+        const dailyPreview = document.getElementById('dailyPreview');
+        const weeklyPreview = document.getElementById('weeklyPreview');
+        const dailyProgress = document.getElementById('dailyProgress');
+        const weeklyProgress = document.getElementById('weeklyProgress');
+
+        function updatePreview() {
+            const daily = parseInt(maxHoursDay.value) || 0;
+            const weekly = parseInt(maxHoursWeek.value) || 0;
+
+            dailyPreview.textContent = `${daily} hours`;
+            weeklyPreview.textContent = `${weekly} hours`;
+
+            dailyProgress.style.width = `${(daily / 10) * 100}%`;
+            weeklyProgress.style.width = `${(weekly / 50) * 100}%`;
+
+            // Color coding
+            if (daily <= 4) {
+                dailyProgress.style.background = 'linear-gradient(90deg, #4caf50, #66bb6a)';
+            } else if (daily <= 6) {
+                dailyProgress.style.background = 'linear-gradient(90deg, #ff9800, #ffa726)';
+            } else {
+                dailyProgress.style.background = 'linear-gradient(90deg, #f44336, #ef5350)';
+            }
+
+            if (weekly <= 24) {
+                weeklyProgress.style.background = 'linear-gradient(90deg, #4caf50, #66bb6a)';
+            } else if (weekly <= 32) {
+                weeklyProgress.style.background = 'linear-gradient(90deg, #ff9800, #ffa726)';
+            } else {
+                weeklyProgress.style.background = 'linear-gradient(90deg, #f44336, #ef5350)';
+            }
+        }
+
+        maxHoursDay.addEventListener('input', updatePreview);
+        maxHoursWeek.addEventListener('input', updatePreview);
+
+        // Form validation
+        document.getElementById('teacherForm').addEventListener('submit', function(e) {
+            const daily = parseInt(maxHoursDay.value);
+            const weekly = parseInt(maxHoursWeek.value);
+
+            if (daily > 8) {
+                if (!confirm('Warning: Daily hours exceed recommended limit (8 hours). Continue?')) {
+                    e.preventDefault();
+                }
+            }
+
+            if (weekly > 40) {
+                if (!confirm('Warning: Weekly hours exceed recommended limit (40 hours). Continue?')) {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        // Initialize preview
+        updatePreview();
+    </script>
+
+    <style>
+        .hours-preview {
+            padding: 25px;
+            border-radius: 15px;
+            margin: 25px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .hours-preview h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .preview-item {
+            text-align: center;
+        }
+
+        .preview-label {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .preview-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        @keyframes zoom-in {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .zoom-in {
+            animation: zoom-in 0.5s ease-out;
+        }
+
+        @media (max-width: 768px) {
+            .preview-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ class_info['name'] }} - Timetable</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-brand gradient-text">📅 Timetable Manager</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+            <a href="{{ url_for('teachers') }}">👨‍🏫 Teachers</a>
+            <a href="{{ url_for('subjects') }}">📚 Subjects</a>
+            <a href="{{ url_for('rooms') }}">🏛️ Rooms</a>
+            <a href="{{ url_for('classes') }}">🎓 Classes</a>
+            <a href="{{ url_for('generate_timetable') }}">⚡ Generate</a>
+            <a href="{{ url_for('analytics') }}">📊 Analytics</a>
+            <a href="{{ url_for('logout') }}" style="color: #f44336;">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="timetable-header fade-in-up">
+            <div>
+                <h1 class="gradient-text">{{ class_info['name'] }}</h1>
+                <p style="color: white; margin-top: 8px;">
+                    {{ class_info['semester'] }} • {{ class_info['department'] }} • {{ class_info['num_students'] }} Students
+                </p>
+            </div>
+            <div class="header-actions">
+                <button onclick="window.print()" class="btn btn-secondary">
+                    🖨️ Print
+                </button>
+                <button onclick="exportToPDF()" class="btn btn-primary glow-on-hover">
+                    📄 Export PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Timetable Card -->
+        <div class="timetable-card glass fade-in-up" style="animation-delay: 0.2s;">
+            <div class="timetable-controls">
+                <div class="view-mode">
+                    <button class="view-btn active" onclick="setView('grid')">
+                        📅 Grid View
+                    </button>
+                    <button class="view-btn" onclick="setView('list')">
+                        📋 List View
+                    </button>
+                </div>
+                <div class="legend">
+                    <span class="legend-item theory">📖 Theory</span>
+                    <span class="legend-item practical">🔬 Practical</span>
+                    <span class="legend-item break">☕ Break</span>
+                </div>
+            </div>
+
+            <!-- Grid View -->
+            <div class="timetable-grid" id="gridView">
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th class="time-col">⏰ Time</th>
+                            {% for day in days %}
+                            <th class="day-col">
+                                <div class="day-name">{{ day }}</div>
+                                <div class="day-date">📅</div>
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slot in time_slots %}
+                        <tr>
+                            <td class="time-slot">
+                                <div class="time-range">
+                                    <div class="start-time">{{ slot['start_time'] }}</div>
+                                    <div class="time-divider">—</div>
+                                    <div class="end-time">{{ slot['end_time'] }}</div>
+                                </div>
+                            </td>
+                            {% for day in days %}
+                            <td class="class-cell">
+                                {% set entry = timetable_grid[day][slot['slot_number']] %}
+                                {% if entry %}
+                                <div class="class-entry zoom-hover">
+                                    <div class="subject-name">{{ entry['subject_name'] }}</div>
+                                    <div class="subject-code">{{ entry['subject_code'] }}</div>
+                                    <div class="teacher-name">👨‍🏫 {{ entry['teacher_name'] }}</div>
+                                    <div class="room-info">🏛️ {{ entry['room_number'] }}</div>
+                                </div>
+                                {% else %}
+                                <div class="empty-slot">—</div>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- List View -->
+            <div class="timetable-list" id="listView" style="display: none;">
+                {% for day in days %}
+                <div class="day-section glass">
+                    <h3 class="day-header gradient-text">{{ day }}</h3>
+                    <div class="day-schedule">
+                        {% for slot in time_slots %}
+                            {% set entry = timetable_grid[day][slot['slot_number']] %}
+                            {% if entry %}
+                            <div class="schedule-item zoom-hover">
+                                <div class="item-time">
+                                    {{ slot['start_time'] }} - {{ slot['end_time'] }}
+                                </div>
+                                <div class="item-details">
+                                    <h4>{{ entry['subject_name'] }}</h4>
+                                    <p>👨‍🏫 {{ entry['teacher_name'] }} • 🏛️ {{ entry['room_name'] }}</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="timetable-stats fade-in-up" style="animation-delay: 0.4s;">
+            <h2 class="gradient-text">📊 Week Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-card glass">
+                    <div class="stat-icon">📚</div>
+                    <div class="stat-info">
+                        <h3>Total Classes</h3>
+                        <p class="stat-value">{{ days|length * time_slots|length }}</p>
+                    </div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-info">
+                        <h3>Hours Per Week</h3>
+                        <p class="stat-value">{{ time_slots|length * days|length }}</p>
+                    </div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-info">
+                        <h3>Working Days</h3>
+                        <p class="stat-value">{{ days|length }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setView(view) {
+            const gridView = document.getElementById('gridView');
+            const listView = document.getElementById('listView');
+            const buttons = document.querySelectorAll('.view-btn');
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (view === 'grid') {
+                gridView.style.display = 'block';
+                listView.style.display = 'none';
+            } else {
+                gridView.style.display = 'none';
+                listView.style.display = 'block';
+            }
+        }
+
+        function exportToPDF() {
+            alert('PDF export feature would be implemented here using libraries like jsPDF or server-side PDF generation.');
+        }
+
+        // Add print-friendly class names when printing
+        window.onbeforeprint = function() {
+            document.body.classList.add('printing');
+        };
+
+        window.onafterprint = function() {
+            document.body.classList.remove('printing');
+        };
+    </script>
+
+    <style>
+        .timetable-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .timetable-card {
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+
+        .timetable-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .view-mode {
+            display: flex;
+            gap: 10px;
+        }
+
+        .view-btn {
+            padding: 10px 20px;
+            border: 2px solid transparent;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .view-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            padding: 6px 14px;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .legend-item.theory {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            color: #1976d2;
+        }
+
+        .legend-item.practical {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            color: #2e7d32;
+        }
+
+        .legend-item.break {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            color: #ef6c00;
+        }
+
+        .timetable-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 8px;
+        }
+
+        .timetable-table th {
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .day-name {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .day-date {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .time-col {
+            width: 120px;
+        }
+
+        .time-slot {
+            padding: 15px;
+            background: linear-gradient(135deg, #f5f5f5, #e8e8e8);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .time-range {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .start-time, .end-time {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .time-divider {
+            color: #999;
+            font-size: 10px;
+        }
+
+        .class-cell {
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+        }
+
+        .class-entry {
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05));
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .class-entry:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .subject-name {
+            font-weight: 700;
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .subject-code {
+            display: inline-block;
+            padding: 3px 8px;
+            background: white;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .teacher-name, .room-info {
+            font-size: 12px;
+            color: #666;
+            margin: 3px 0;
+        }
+
+        .empty-slot {
+            text-align: center;
+            color: #ccc;
+            font-size: 24px;
+            padding: 20px;
+        }
+
+        /* List View Styles */
+        .timetable-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .day-section {
+            padding: 25px;
+            border-radius: 15px;
+        }
+
+        .day-header {
+            font-size: 24px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .day-schedule {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .schedule-item {
+            display: flex;
+            gap: 20px;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s;
+        }
+
+        .schedule-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateX(10px);
+        }
+
+        .item-time {
+            font-weight: 700;
+            color: #667eea;
+            min-width: 120px;
+            font-size: 14px;
+        }
+
+        .item-details h4 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .item-details p {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .timetable-stats h2 {
+            margin-bottom: 25px;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+            }
+
+            .navbar, .header-actions, .timetable-controls {
+                display: none;
+            }
+
+            .timetable-card {
+                box-shadow: none;
+                background: white;
+            }
+
+            .class-entry {
+                break-inside: avoid;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .timetable-table {
+                font-size: 12px;
+            }
+
+            .subject-name {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .timetable-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .timetable-grid {
+                overflow-x: auto;
+            }
+
+            .timetable-table {
+                min-width: 800px;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Timetable Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-body">
+    <div class="auth-container">
+        <div class="auth-box glass fade-in-scale">
+            <div class="auth-logo">
+                <div class="auth-logo-icon float-icon">🎓</div>
+                <h1 class="gradient-text">Join Timetable Manager</h1>
+                <p>Create your free account today</p>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} slide-in-right">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST" action="{{ url_for('signup') }}" class="auth-form">
+                <div class="form-group">
+                    <label for="name">👤 Full Name</label>
+                    <input type="text" id="name" name="name" required 
+                           placeholder="Enter your full name" autofocus>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">📧 Email Address</label>
+                    <input type="email" id="email" name="email" required 
+                           placeholder="Enter your email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">🔒 Password</label>
+                    <input type="password" id="password" name="password" required 
+                           placeholder="Create password" minlength="6">
+                    <div class="password-strength" id="passwordStrength"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm_password">🔒 Confirm Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required 
+                           placeholder="Confirm password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="institution">🏛️ Institution Name</label>
+                    <input type="text" id="institution" name="institution" 
+                           placeholder="Your school/college name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">📱 Phone Number</label>
+                    <input type="tel" id="phone" name="phone" 
+                           placeholder="+91 98765 43210">
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block glow-on-hover">
+                    ✨ Create Account
+                </button>
+            </form>
+            
+            <div class="auth-links">
+                Already have an account? <a href="{{ url_for('login') }}">Login here</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const passwordInput = document.getElementById('password');
+        const strengthDiv = document.getElementById('passwordStrength');
+        const confirmInput = document.getElementById('confirm_password');
+        
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            let strength = 'weak';
+            let strengthText = '';
+            let strengthClass = 'strength-weak';
+            
+            if (password.length === 0) {
+                strengthDiv.textContent = '';
+                return;
+            }
+            
+            if (password.length >= 6 && password.length < 10) {
+                strength = 'medium';
+                strengthText = '🟡 Medium strength';
+                strengthClass = 'strength-medium';
+            } else if (password.length >= 10) {
+                strength = 'strong';
+                strengthText = '🟢 Strong password';
+                strengthClass = 'strength-strong';
+            } else {
+                strengthText = '🔴 Weak password (min 6 characters)';
+                strengthClass = 'strength-weak';
+            }
+            
+            strengthDiv.textContent = strengthText;
+            strengthDiv.className = 'password-strength ' + strengthClass;
+        });
+        
+        confirmInput.addEventListener('input', function() {
+            if (this.value !== passwordInput.value) {
+                this.setCustomValidity('Passwords do not match');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    </script>
+</body>
+</html>

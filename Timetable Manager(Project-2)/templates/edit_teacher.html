@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Teacher - Timetable System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-brand gradient-text">📅 Timetable Manager</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+            <a href="{{ url_for('teachers') }}" class="active">👨‍🏫 Teachers</a>
+            <a href="{{ url_for('subjects') }}">📚 Subjects</a>
+            <a href="{{ url_for('rooms') }}">🏛️ Rooms</a>
+            <a href="{{ url_for('classes') }}">🎓 Classes</a>
+            <a href="{{ url_for('logout') }}" style="color: #f44336;">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="form-container glass zoom-in">
+            <h1 class="gradient-text">✏️ Edit Teacher</h1>
+            <p style="color: #666; margin-bottom: 30px;">Update faculty member information</p>
+            
+            <form method="POST" class="item-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>👤 Full Name *</label>
+                        <input type="text" name="name" required value="{{ teacher['name'] }}">
+                    </div>
+                    <div class="form-group">
+                        <label>📧 Email Address</label>
+                        <input type="email" name="email" value="{{ teacher['email'] or '' }}">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>📱 Phone Number</label>
+                        <input type="tel" name="phone" value="{{ teacher['phone'] or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label>🏢 Department *</label>
+                        <select name="department" required>
+                            <option value="Computer Science" {% if teacher['department'] == 'Computer Science' %}selected{% endif %}>Computer Science</option>
+                            <option value="Mathematics" {% if teacher['department'] == 'Mathematics' %}selected{% endif %}>Mathematics</option>
+                            <option value="Physics" {% if teacher['department'] == 'Physics' %}selected{% endif %}>Physics</option>
+                            <option value="Chemistry" {% if teacher['department'] == 'Chemistry' %}selected{% endif %}>Chemistry</option>
+                            <option value="Electronics" {% if teacher['department'] == 'Electronics' %}selected{% endif %}>Electronics</option>
+                            <option value="Mechanical" {% if teacher['department'] == 'Mechanical' %}selected{% endif %}>Mechanical Engineering</option>
+                            <option value="Civil" {% if teacher['department'] == 'Civil' %}selected{% endif %}>Civil Engineering</option>
+                            <option value="Electrical" {% if teacher['department'] == 'Electrical' %}selected{% endif %}>Electrical Engineering</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>🎯 Specialization</label>
+                        <input type="text" name="specialization" value="{{ teacher['specialization'] or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label>⏰ Max Hours Per Day</label>
+                        <input type="number" name="max_hours_per_day" value="{{ teacher['max_hours_per_day'] }}" 
+                               min="1" max="10">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>📅 Max Hours Per Week</label>
+                        <input type="number" name="max_hours_per_week" value="{{ teacher['max_hours_per_week'] }}" 
+                               min="1" max="50">
+                    </div>
+                    <div class="form-group">
+                        <label>🗓️ Preferred Days</label>
+                        <input type="text" name="preferred_days" value="{{ teacher['preferred_days'] or '' }}">
+                    </div>
+                </div>
+
+                <div class="info-box glass">
+                    <h3>📊 Current Information</h3>
+                    <p><strong>Teacher ID:</strong> {{ teacher['id'] }}</p>
+                    <p><strong>Last Updated:</strong> Recently</p>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary glow-on-hover">
+                        💾 Update Teacher
+                    </button>
+                    <a href="{{ url_for('teachers') }}" class="btn btn-secondary">
+                        ❌ Cancel
+                    </a>
+                    <a href="{{ url_for('teacher_timetable', teacher_id=teacher['id']) }}" 
+                       class="btn" style="background: linear-gradient(135deg, #2196F3, #64B5F6); color: white;">
+                        📅 View Timetable
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .info-box {
+            padding: 20px;
+            border-radius: 15px;
+            margin: 25px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-box h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .info-box p {
+            margin: 10px 0;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</body>
+</html>

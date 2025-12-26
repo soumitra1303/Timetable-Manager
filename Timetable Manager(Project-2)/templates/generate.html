@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Timetable - AI Scheduler</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-brand gradient-text">📅 Timetable Manager</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+            <a href="{{ url_for('teachers') }}">👨‍🏫 Teachers</a>
+            <a href="{{ url_for('subjects') }}">📚 Subjects</a>
+            <a href="{{ url_for('rooms') }}">🏛️ Rooms</a>
+            <a href="{{ url_for('classes') }}">🎓 Classes</a>
+            <a href="{{ url_for('generate_timetable') }}" class="active">⚡ Generate</a>
+            <a href="{{ url_for('analytics') }}">📊 Analytics</a>
+            <a href="{{ url_for('settings') }}">⚙️ Settings</a>
+            <a href="{{ url_for('logout') }}" style="color: #f44336;">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="generate-header fade-in-up">
+            <h1 class="gradient-text neon-text">⚡ AI Timetable Generator</h1>
+            <p style="color: white; margin-top: 10px; font-size: 18px;">
+                Intelligent scheduling powered by genetic algorithms
+            </p>
+        </div>
+
+        <!-- Generator Card -->
+        <div class="generator-card glass fade-in-up" style="animation-delay: 0.2s;">
+            <div class="generator-icon">🤖</div>
+            <h2>Automatic Schedule Generation</h2>
+            <p>Select a class to generate an optimized timetable with zero conflicts</p>
+
+            <div class="class-selector">
+                <label>🎓 Select Class:</label>
+                <select id="classSelect" class="class-select">
+                    <option value="">Choose a class...</option>
+                    {% for class in classes %}
+                    <option value="{{ class['id'] }}" 
+                            data-name="{{ class['name'] }}"
+                            data-students="{{ class['num_students'] }}">
+                        {{ class['name'] }} ({{ class['semester'] }}) - {{ class['num_students'] }} students
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button onclick="generateTimetable()" class="btn btn-primary btn-large glow-on-hover" id="generateBtn">
+                🚀 Generate Timetable
+            </button>
+
+            <!-- Progress Indicator -->
+            <div class="progress-container" id="progressContainer" style="display: none;">
+                <h3>⚙️ Generating Schedule...</h3>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="progressBar"></div>
+                </div>
+                <div class="progress-steps" id="progressSteps">
+                    <div class="step">📊 Analyzing constraints...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="features-section fade-in-up" style="animation-delay: 0.4s;">
+            <h2 class="gradient-text">✨ AI Features</h2>
+            <div class="features-grid">
+                <div class="feature-card glass card-3d">
+                    <div class="feature-icon">🧠</div>
+                    <h3>Intelligent Optimization</h3>
+                    <p>Uses genetic algorithm to find the best possible schedule</p>
+                </div>
+
+                <div class="feature-card glass card-3d">
+                    <div class="feature-icon">🚫</div>
+                    <h3>Zero Conflicts</h3>
+                    <p>Automatically prevents teacher and room double-booking</p>
+                </div>
+
+                <div class="feature-card glass card-3d">
+                    <div class="feature-icon">⚖️</div>
+                    <h3>Load Balancing</h3>
+                    <p>Evenly distributes workload across days and time slots</p>
+                </div>
+
+                <div class="feature-card glass card-3d">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Constraint Satisfaction</h3>
+                    <p>Respects teacher preferences and room requirements</p>
+                </div>
+
+                <div class="feature-card glass card-3d">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Instant Generation</h3>
+                    <p>Creates complete weekly schedule in seconds</p>
+                </div>
+
+                <div class="feature-card glass card-3d">
+                    <div class="feature-icon">📈</div>
+                    <h3>Quality Metrics</h3>
+                    <p>Evaluates and optimizes schedule quality score</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Algorithm Explanation -->
+        <div class="algorithm-section glass fade-in-up" style="animation-delay: 0.6s;">
+            <h2>🧬 How It Works</h2>
+            <div class="algorithm-steps">
+                <div class="algo-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Initialize Population</h4>
+                        <p>Create multiple random schedule variations</p>
+                    </div>
+                </div>
+                <div class="algo-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Fitness Evaluation</h4>
+                        <p>Score each schedule based on constraints</p>
+                    </div>
+                </div>
+                <div class="algo-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Selection & Crossover</h4>
+                        <p>Combine best schedules to create new ones</p>
+                    </div>
+                </div>
+                <div class="algo-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Mutation & Optimization</h4>
+                        <p>Apply random changes to explore solutions</p>
+                    </div>
+                </div>
+                <div class="algo-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h4>Best Solution</h4>
+                        <p>Return the highest quality schedule</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generateTimetable() {
+            const classSelect = document.getElementById('classSelect');
+            const classId = classSelect.value;
+            
+            if (!classId) {
+                alert('Please select a class first!');
+                return;
+            }
+
+            const className = classSelect.options[classSelect.selectedIndex].dataset.name;
+            const btn = document.getElementById('generateBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressSteps = document.getElementById('progressSteps');
+
+            // Show progress
+            btn.disabled = true;
+            btn.textContent = '⚙️ Generating...';
+            progressContainer.style.display = 'block';
+
+            // Simulate progress steps
+            const steps = [
+                '📊 Analyzing constraints...',
+                '🧬 Initializing genetic algorithm...',
+                '🔄 Running generations...',
+                '⚖️ Balancing workload...',
+                '🚫 Checking for conflicts...',
+                '✨ Optimizing schedule...',
+                '💾 Saving timetable...'
+            ];
+
+            let currentStep = 0;
+            let progress = 0;
+
+            const stepInterval = setInterval(() => {
+                if (currentStep < steps.length) {
+                    progressSteps.innerHTML = `<div class="step bounce-in">${steps[currentStep]}</div>`;
+                    currentStep++;
+                    progress += 14;
+                    progressBar.style.width = progress + '%';
+                }
+            }, 800);
+
+            // Call API
+            fetch('/api/generate-timetable', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ class_id: classId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(stepInterval);
+                progressBar.style.width = '100%';
+                
+                if (data.success) {
+                    progressSteps.innerHTML = '<div class="step success-step">✅ Timetable generated successfully!</div>';
+                    setTimeout(() => {
+                        window.location.href = `/view/${classId}`;
+                    }, 1500);
+                } else {
+                    progressSteps.innerHTML = '<div class="step error-step">❌ Error: ' + data.error + '</div>';
+                    btn.disabled = false;
+                    btn.textContent = '🚀 Generate Timetable';
+                }
+            })
+            .catch(error => {
+                clearInterval(stepInterval);
+                progressSteps.innerHTML = '<div class="step error-step">❌ Error: ' + error + '</div>';
+                btn.disabled = false;
+                btn.textContent = '🚀 Generate Timetable';
+            });
+        }
+    </script>
+
+    <style>
+        .generate-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .generator-card {
+            text-align: center;
+            padding: 50px;
+            border-radius: 25px;
+            max-width: 800px;
+            margin: 0 auto 40px;
+        }
+
+        .generator-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: float-icon 3s ease-in-out infinite;
+        }
+
+        .generator-card h2 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .generator-card p {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 35px;
+        }
+
+        .class-selector {
+            margin: 30px 0;
+        }
+
+        .class-selector label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .class-select {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            font-size: 16px;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .class-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+        }
+
+        .btn-large {
+            padding: 18px 40px;
+            font-size: 18px;
+            margin-top: 25px;
+        }
+
+        .progress-container {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .progress-container h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .progress-steps {
+            margin-top: 20px;
+        }
+
+        .step {
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            color: #667eea;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        .success-step {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4caf50;
+        }
+
+        .error-step {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+        }
+
+        .algorithm-section {
+            padding: 40px;
+            border-radius: 20px;
+        }
+
+        .algorithm-section h2 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 26px;
+        }
+
+        .algorithm-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .algo-step {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 15px;
+            transition: all 0.3s;
+        }
+
+        .algo-step:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateX(10px);
+        }
+
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .step-content h4 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+
+        .step-content p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .generator-card {
+                padding: 30px 20px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>

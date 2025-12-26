@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classes Management - Timetable System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-brand gradient-text">📅 Timetable Manager</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+            <a href="{{ url_for('teachers') }}">👨‍🏫 Teachers</a>
+            <a href="{{ url_for('subjects') }}">📚 Subjects</a>
+            <a href="{{ url_for('rooms') }}">🏛️ Rooms</a>
+            <a href="{{ url_for('classes') }}" class="active">🎓 Classes</a>
+            <a href="{{ url_for('generate_timetable') }}">⚡ Generate</a>
+            <a href="{{ url_for('analytics') }}">📊 Analytics</a>
+            <a href="{{ url_for('settings') }}">⚙️ Settings</a>
+            <a href="{{ url_for('logout') }}" style="color: #f44336;">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header fade-in-up">
+            <div>
+                <h1 class="gradient-text">🎓 Classes Management</h1>
+                <p style="color: white; margin-top: 8px;">Manage student sections and groups</p>
+            </div>
+            <a href="{{ url_for('add_class') }}" class="btn btn-primary glow-on-hover">
+                ➕ Add New Class
+            </a>
+        </div>
+
+        <!-- Filter by Semester -->
+        <div class="filter-tabs glass fade-in-up" style="animation-delay: 0.1s;">
+            <button class="tab-btn active" onclick="filterBySemester('all')">
+                📚 All Classes
+            </button>
+            <button class="tab-btn" onclick="filterBySemester('Semester 3')">
+                3️⃣ Semester 3
+            </button>
+            <button class="tab-btn" onclick="filterBySemester('Semester 5')">
+                5️⃣ Semester 5
+            </button>
+            <button class="tab-btn" onclick="filterBySemester('Semester 7')">
+                7️⃣ Semester 7
+            </button>
+        </div>
+
+        <!-- Classes Grid -->
+        <div class="classes-grid fade-in-up" style="animation-delay: 0.2s;">
+            {% for class in classes %}
+            <div class="class-card glass zoom-hover card-3d" data-semester="{{ class['semester'] }}">
+                <div class="class-header">
+                    <div class="class-icon">🎓</div>
+                    <div class="semester-badge">{{ class['semester'] }}</div>
+                </div>
+                
+                <h3 class="class-name">{{ class['name'] }}</h3>
+                <div class="class-department">{{ class['department'] }}</div>
+                
+                <div class="class-info">
+                    <div class="info-row">
+                        <span class="info-label">👥 Students:</span>
+                        <span class="info-value">{{ class['num_students'] }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">📅 Semester:</span>
+                        <span class="info-value">{{ class['semester'] }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">🏢 Department:</span>
+                        <span class="info-value">{{ class['department'] }}</span>
+                    </div>
+                </div>
+
+                <div class="progress-ring">
+                    <svg width="120" height="120">
+                        <circle cx="60" cy="60" r="50" stroke="#e0e0e0" stroke-width="8" fill="none"></circle>
+                        <circle cx="60" cy="60" r="50" stroke="url(#gradient{{ class['id'] }})" stroke-width="8" fill="none"
+                                stroke-dasharray="314" stroke-dashoffset="{{ 314 - (class['num_students'] / 100 * 314) }}"
+                                transform="rotate(-90 60 60)"></circle>
+                        <defs>
+                            <linearGradient id="gradient{{ class['id'] }}" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="ring-text">
+                        <div class="ring-number">{{ class['num_students'] }}</div>
+                        <div class="ring-label">Students</div>
+                    </div>
+                </div>
+                
+                <div class="class-actions">
+                    <a href="{{ url_for('view_timetable', class_id=class['id']) }}" 
+                       class="btn btn-sm btn-primary">
+                        📅 View Timetable
+                    </a>
+                    <a href="{{ url_for('generate_timetable') }}?class={{ class['id'] }}" 
+                       class="btn btn-sm btn-success">
+                        ⚡ Generate
+                    </a>
+                    <button onclick="deleteClass({{ class['id'] }}, '{{ class['name'] }}')" 
+                            class="btn btn-sm btn-danger">
+                        🗑️ Delete
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if not classes %}
+        <div class="empty-state glass fade-in-up">
+            <div class="empty-icon">🎓</div>
+            <h2>No Classes Added Yet</h2>
+            <p>Start by adding your first class section</p>
+            <a href="{{ url_for('add_class') }}" class="btn btn-primary">
+                ➕ Add First Class
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Summary Stats -->
+        <div class="summary-section glass fade-in-up" style="animation-delay: 0.3s;">
+            <h3>📊 Classes Summary</h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-icon">🎓</div>
+                    <div class="summary-details">
+                        <div class="summary-value">{{ classes|length }}</div>
+                        <div class="summary-label">Total Classes</div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon">👥</div>
+                    <div class="summary-details">
+                        <div class="summary-value">
+                            {% set total_students = classes|sum(attribute='num_students') %}
+                            {{ total_students }}
+                        </div>
+                        <div class="summary-label">Total Students</div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon">📈</div>
+                    <div class="summary-details">
+                        <div class="summary-value">
+                            {% set avg_students = (classes|sum(attribute='num_students') / classes|length)|int if classes else 0 %}
+                            {{ avg_students }}
+                        </div>
+                        <div class="summary-label">Avg. Class Size</div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon">🏢</div>
+                    <div class="summary-details">
+                        <div class="summary-value">
+                            {% set unique_depts = classes|map(attribute='department')|unique|list|length %}
+                            {{ unique_depts }}
+                        </div>
+                        <div class="summary-label">Departments</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function filterBySemester(semester) {
+            const cards = document.querySelectorAll('.class-card');
+            const tabs = document.querySelectorAll('.tab-btn');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            cards.forEach(card => {
+                if (semester === 'all' || card.dataset.semester === semester) {
+                    card.style.display = 'block';
+                    card.style.animation = 'fadeInScale 0.5s ease-out';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function deleteClass(id, name) {
+            if (confirm(`Delete class "${name}"?\n\nThis will remove all associated timetable entries.`)) {
+                fetch(`/classes/delete/${id}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Class deleted successfully!', 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification('Error: ' + data.error, 'error');
+                    }
+                });
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type} slide-in-right`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed; top: 20px; right: 20px; padding: 15px 25px;
+                background: ${type === 'success' ? '#4caf50' : '#f44336'};
+                color: white; border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 10000;
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+    </script>
+
+    <style>
+        .classes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        .class-card {
+            padding: 30px;
+            border-radius: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .class-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.6s;
+        }
+
+        .class-card:hover::before {
+            left: 100%;
+        }
+
+        .class-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .class-icon {
+            font-size: 48px;
+            animation: float-icon 3s ease-in-out infinite;
+        }
+
+        .semester-badge {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .class-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .class-department {
+            display: inline-block;
+            padding: 6px 14px;
+            background: linear-gradient(135deg, #f5f5f5, #e8e8e8);
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .class-info {
+            background: rgba(102, 126, 234, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .info-label {
+            color: #999;
+        }
+
+        .info-value {
+            font-weight: 700;
+            color: #333;
+        }
+
+        .progress-ring {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 25px auto;
+        }
+
+        .ring-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .ring-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .ring-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+        }
+
+        .class-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            color: white;
+        }
+
+        .summary-section {
+            padding: 30px;
+            border-radius: 20px;
+            margin-top: 30px;
+        }
+
+        .summary-section h3 {
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 22px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 15px;
+            transition: all 0.3s;
+        }
+
+        .summary-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .summary-icon {
+            font-size: 48px;
+        }
+
+        .summary-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .classes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>

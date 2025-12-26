@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Room - Timetable System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-brand gradient-text">📅 Timetable Manager</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+            <a href="{{ url_for('teachers') }}">👨‍🏫 Teachers</a>
+            <a href="{{ url_for('subjects') }}">📚 Subjects</a>
+            <a href="{{ url_for('rooms') }}" class="active">🏛️ Rooms</a>
+            <a href="{{ url_for('classes') }}">🎓 Classes</a>
+            <a href="{{ url_for('logout') }}" style="color: #f44336;">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="form-container glass zoom-in">
+            <h1 class="gradient-text">➕ Add New Room</h1>
+            <p style="color: #666; margin-bottom: 30px;">Register a new venue or facility</p>
+            
+            <form method="POST" class="item-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>🏛️ Room Name *</label>
+                        <input type="text" name="name" required 
+                               placeholder="e.g., Main Lecture Hall" id="roomName">
+                    </div>
+                    <div class="form-group">
+                        <label>🔖 Room Number *</label>
+                        <input type="text" name="room_number" required 
+                               placeholder="e.g., LH-101" id="roomNumber" style="text-transform: uppercase;">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>👥 Capacity *</label>
+                        <input type="number" name="capacity" required value="60" 
+                               min="1" max="500" id="capacityInput">
+                        <small style="color: #999;">Number of students</small>
+                    </div>
+                    <div class="form-group">
+                        <label>🏢 Room Type *</label>
+                        <select name="room_type" required id="roomType" onchange="updatePreview()">
+                            <option value="Classroom">📖 Classroom</option>
+                            <option value="Lab">🔬 Lab</option>
+                            <option value="Lecture Hall">🎭 Lecture Hall</option>
+                            <option value="Seminar Hall">💼 Seminar Hall</option>
+                            <option value="Tutorial Room">✍️ Tutorial Room</option>
+                            <option value="Auditorium">🎪 Auditorium</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="has_projector" checked id="projectorCheck">
+                            <span>📽️ Has Projector</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="has_lab_equipment" id="labCheck">
+                            <span>🔬 Has Lab Equipment</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Capacity Indicator -->
+                <div class="capacity-indicator glass">
+                    <h3>👥 Capacity Visualization</h3>
+                    <div class="capacity-bars">
+                        <div class="capacity-bar-item">
+                            <div class="bar-label">Small (< 40)</div>
+                            <div class="capacity-bar">
+                                <div class="capacity-fill small" id="smallBar"></div>
+                            </div>
+                        </div>
+                        <div class="capacity-bar-item">
+                            <div class="bar-label">Medium (40-80)</div>
+                            <div class="capacity-bar">
+                                <div class="capacity-fill medium" id="mediumBar"></div>
+                            </div>
+                        </div>
+                        <div class="capacity-bar-item">
+                            <div class="bar-label">Large (> 80)</div>
+                            <div class="capacity-bar">
+                                <div class="capacity-fill large" id="largeBar"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="capacity-recommendation" id="recommendation">
+                        Current capacity: 60 students
+                    </div>
+                </div>
+
+                <!-- Room Preview -->
+                <div class="room-preview glass">
+                    <h3>🎨 Room Preview</h3>
+                    <div class="preview-room-card">
+                        <div class="preview-icon" id="previewIcon">🏛️</div>
+                        <h4 id="previewName">Room Name</h4>
+                        <div class="preview-number" id="previewNumber">ROOM-000</div>
+                        <div class="preview-capacity">
+                            <span id="previewCapacity">60</span> seats
+                        </div>
+                        <div class="preview-facilities" id="previewFacilities">
+                            <span class="facility-tag">📽️ Projector</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary glow-on-hover">
+                        💾 Save Room
+                    </button>
+                    <a href="{{ url_for('rooms') }}" class="btn btn-secondary">
+                        ❌ Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function updatePreview() {
+            const name = document.getElementById('roomName').value || 'Room Name';
+            const number = document.getElementById('roomNumber').value.toUpperCase() || 'ROOM-000';
+            const capacity = document.getElementById('capacityInput').value;
+            const type = document.getElementById('roomType').value;
+            const hasProjector = document.getElementById('projectorCheck').checked;
+            const hasLab = document.getElementById('labCheck').checked;
+
+            // Update preview
+            document.getElementById('previewName').textContent = name;
+            document.getElementById('previewNumber').textContent = number;
+            document.getElementById('previewCapacity').textContent = capacity;
+
+            // Update icon based on type
+            const icons = {
+                'Classroom': '📖',
+                'Lab': '🔬',
+                'Lecture Hall': '🎭',
+                'Seminar Hall': '💼',
+                'Tutorial Room': '✍️',
+                'Auditorium': '🎪'
+            };
+            document.getElementById('previewIcon').textContent = icons[type] || '🏛️';
+
+            // Update facilities
+            let facilities = [];
+            if (hasProjector) facilities.push('<span class="facility-tag">📽️ Projector</span>');
+            if (hasLab) facilities.push('<span class="facility-tag">🔬 Lab Equipment</span>');
+            document.getElementById('previewFacilities').innerHTML = facilities.join('') || '<span class="facility-tag">No special equipment</span>';
+
+            // Update capacity bars
+            const cap = parseInt(capacity);
+            document.getElementById('smallBar').style.width = cap < 40 ? '100%' : '0%';
+            document.getElementById('mediumBar').style.width = (cap >= 40 && cap <= 80) ? '100%' : '0%';
+            document.getElementById('largeBar').style.width = cap > 80 ? '100%' : '0%';
+
+            // Recommendation
+            let rec = '';
+            if (cap < 40) rec = '✅ Perfect for small classes and tutorials';
+            else if (cap <= 80) rec = '✅ Ideal for regular classes';
+            else rec = '✅ Great for large lectures and seminars';
+            
+            document.getElementById('recommendation').textContent = `Current capacity: ${cap} students. ${rec}`;
+        }
+
+        // Live updates
+        document.getElementById('roomName').addEventListener('input', updatePreview);
+        document.getElementById('roomNumber').addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+            updatePreview();
+        });
+        document.getElementById('capacityInput').addEventListener('input', updatePreview);
+        document.getElementById('projectorCheck').addEventListener('change', updatePreview);
+        document.getElementById('labCheck').addEventListener('change', updatePreview);
+
+        // Initialize
+        updatePreview();
+    </script>
+
+    <style>
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .checkbox-label:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-label span {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .capacity-indicator {
+            padding: 25px;
+            border-radius: 15px;
+            margin: 25px 0;
+        }
+
+        .capacity-indicator h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .capacity-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .capacity-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .bar-label {
+            min-width: 120px;
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .capacity-bar {
+            flex: 1;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .capacity-fill {
+            height: 100%;
+            width: 0;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .capacity-fill.small {
+            background: linear-gradient(90deg, #4caf50, #66bb6a);
+        }
+
+        .capacity-fill.medium {
+            background: linear-gradient(90deg, #2196F3, #64B5F6);
+        }
+
+        .capacity-fill.large {
+            background: linear-gradient(90deg, #ff9800, #ffa726);
+        }
+
+        .capacity-recommendation {
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .room-preview {
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 25px 0;
+        }
+
+        .room-preview h3 {
+            color: #333;
+            margin-bottom: 25px;
+        }
+
+        .preview-room-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05));
+            padding: 30px;
+            border-radius: 20px;
+            border: 2px dashed rgba(102, 126, 234, 0.3);
+        }
+
+        .preview-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+            animation: float-icon 3s ease-in-out infinite;
+        }
+
+        .preview-room-card h4 {
+            font-size: 22px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .preview-number {
+            display: inline-block;
+            padding: 8px 16px;
+            background: white;
+            border-radius: 15px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .preview-capacity {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            margin: 15px 0;
+        }
+
+        .preview-facilities {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .facility-tag {
+            padding: 6px 14px;
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            color: #2e7d32;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+    </style>
+</body>
+</html>

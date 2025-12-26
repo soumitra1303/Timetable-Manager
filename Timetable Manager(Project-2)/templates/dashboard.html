@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Timetable Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-brand gradient-text">📅 Timetable Manager</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}" class="active">🏠 Dashboard</a>
+            <a href="{{ url_for('teachers') }}">👨‍🏫 Teachers</a>
+            <a href="{{ url_for('subjects') }}">📚 Subjects</a>
+            <a href="{{ url_for('rooms') }}">🏛️ Rooms</a>
+            <a href="{{ url_for('classes') }}">🎓 Classes</a>
+            <a href="{{ url_for('generate_timetable') }}">⚡ Generate</a>
+            <a href="{{ url_for('analytics') }}">📊 Analytics</a>
+            <a href="{{ url_for('settings') }}">⚙️ Settings</a>
+            <a href="{{ url_for('logout') }}" style="color: #f44336;">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} slide-in-right">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="dashboard-header fade-in-up">
+            <div>
+                <h1 class="gradient-text">Welcome, {{ session.user_name }}! 👋</h1>
+                <p style="color: white; margin-top: 10px; font-size: 18px;">
+                    Your intelligent timetable management system
+                </p>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card glass bounce-in" style="animation-delay: 0.1s;">
+                <div class="stat-icon float-icon">👨‍🏫</div>
+                <div class="stat-info">
+                    <h3>Teachers</h3>
+                    <p class="stat-value">{{ stats['teachers'] }}</p>
+                    <small style="color: #999;">Registered faculty</small>
+                </div>
+            </div>
+
+            <div class="stat-card glass bounce-in" style="animation-delay: 0.2s;">
+                <div class="stat-icon float-icon">📚</div>
+                <div class="stat-info">
+                    <h3>Subjects</h3>
+                    <p class="stat-value">{{ stats['subjects'] }}</p>
+                    <small style="color: #999;">Course offerings</small>
+                </div>
+            </div>
+
+            <div class="stat-card glass bounce-in" style="animation-delay: 0.3s;">
+                <div class="stat-icon float-icon">🏛️</div>
+                <div class="stat-info">
+                    <h3>Rooms</h3>
+                    <p class="stat-value">{{ stats['rooms'] }}</p>
+                    <small style="color: #999;">Available venues</small>
+                </div>
+            </div>
+
+            <div class="stat-card glass bounce-in" style="animation-delay: 0.4s;">
+                <div class="stat-icon float-icon">🎓</div>
+                <div class="stat-info">
+                    <h3>Classes</h3>
+                    <p class="stat-value">{{ stats['classes'] }}</p>
+                    <small style="color: #999;">Active sections</small>
+                </div>
+            </div>
+
+            <div class="stat-card glass bounce-in" style="animation-delay: 0.5s;">
+                <div class="stat-icon float-icon">📋</div>
+                <div class="stat-info">
+                    <h3>Schedule Entries</h3>
+                    <p class="stat-value">{{ stats['entries'] }}</p>
+                    <small style="color: #999;">Total allocations</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions fade-in-up" style="animation-delay: 0.6s;">
+            <h2 class="section-title gradient-text">⚡ Quick Actions</h2>
+            <div class="action-grid">
+                <a href="{{ url_for('add_teacher') }}" class="action-card glass glow-on-hover">
+                    <div class="action-icon">➕👨‍🏫</div>
+                    <h3>Add Teacher</h3>
+                    <p>Register new faculty member</p>
+                </a>
+
+                <a href="{{ url_for('add_subject') }}" class="action-card glass glow-on-hover">
+                    <div class="action-icon">➕📚</div>
+                    <h3>Add Subject</h3>
+                    <p>Create new course</p>
+                </a>
+
+                <a href="{{ url_for('add_room') }}" class="action-card glass glow-on-hover">
+                    <div class="action-icon">➕🏛️</div>
+                    <h3>Add Room</h3>
+                    <p>Register new venue</p>
+                </a>
+
+                <a href="{{ url_for('add_class') }}" class="action-card glass glow-on-hover">
+                    <div class="action-icon">➕🎓</div>
+                    <h3>Add Class</h3>
+                    <p>Create new section</p>
+                </a>
+
+                <a href="{{ url_for('generate_timetable') }}" class="action-card glass glow-on-hover" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));">
+                    <div class="action-icon">⚡</div>
+                    <h3>Generate Timetable</h3>
+                    <p>Auto-create schedule</p>
+                </a>
+
+                <a href="{{ url_for('analytics') }}" class="action-card glass glow-on-hover" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(102, 187, 106, 0.1));">
+                    <div class="action-icon">📊</div>
+                    <h3>View Analytics</h3>
+                    <p>Insights & reports</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- Recent Classes -->
+        {% if recent_classes %}
+        <div class="recent-section fade-in-up" style="animation-delay: 0.8s;">
+            <h2 class="section-title gradient-text">📚 Recent Classes</h2>
+            <div class="recent-grid">
+                {% for class in recent_classes %}
+                <div class="recent-card glass zoom-hover">
+                    <div class="recent-icon">🎓</div>
+                    <h3>{{ class['name'] }}</h3>
+                    <p><strong>Semester:</strong> {{ class['semester'] }}</p>
+                    <p><strong>Department:</strong> {{ class['department'] }}</p>
+                    <p><strong>Students:</strong> {{ class['num_students'] }}</p>
+                    <div class="card-actions">
+                        <a href="{{ url_for('view_timetable', class_id=class['id']) }}" class="btn btn-sm btn-primary">
+                            📅 View Timetable
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Features Section -->
+        <div class="features-section fade-in-up" style="animation-delay: 1s;">
+            <h2 class="section-title gradient-text">✨ Key Features</h2>
+            <div class="features-grid">
+                <div class="feature-card glass">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI-Powered Generation</h3>
+                    <p>Intelligent algorithm creates conflict-free schedules automatically</p>
+                </div>
+
+                <div class="feature-card glass">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Conflict Detection</h3>
+                    <p>Real-time validation prevents scheduling conflicts</p>
+                </div>
+
+                <div class="feature-card glass">
+                    <div class="feature-icon">📊</div>
+                    <h3>Analytics Dashboard</h3>
+                    <p>Comprehensive insights on resource utilization</p>
+                </div>
+
+                <div class="feature-card glass">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Beautiful Interface</h3>
+                    <p>Modern, intuitive design with smooth animations</p>
+                </div>
+
+                <div class="feature-card glass">
+                    <div class="feature-icon">🖨️</div>
+                    <h3>Print Ready</h3>
+                    <p>Export and print professional timetables</p>
+                </div>
+
+                <div class="feature-card glass">
+                    <div class="feature-icon">📱</div>
+                    <h3>Responsive Design</h3>
+                    <p>Works perfectly on all devices</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .section-title {
+            font-size: 28px;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        .quick-actions, .recent-section, .features-section {
+            margin-top: 40px;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .action-card {
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .action-card:hover {
+            transform: translateY(-10px) scale(1.05);
+        }
+
+        .action-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .action-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .action-card p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .recent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .recent-card {
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .recent-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .recent-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .recent-card p {
+            color: #666;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .card-actions {
+            margin-top: 20px;
+        }
+
+        .btn-sm {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .feature-card {
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 56px;
+            margin-bottom: 15px;
+        }
+
+        .feature-card h3 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        .feature-card p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .action-grid, .recent-grid, .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>

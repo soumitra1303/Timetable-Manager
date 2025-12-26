@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Class - Timetable System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-brand gradient-text">📅 Timetable Manager</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+            <a href="{{ url_for('teachers') }}">👨‍🏫 Teachers</a>
+            <a href="{{ url_for('subjects') }}">📚 Subjects</a>
+            <a href="{{ url_for('rooms') }}">🏛️ Rooms</a>
+            <a href="{{ url_for('classes') }}" class="active">🎓 Classes</a>
+            <a href="{{ url_for('logout') }}" style="color: #f44336;">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="form-container glass zoom-in">
+            <h1 class="gradient-text">➕ Add New Class</h1>
+            <p style="color: #666; margin-bottom: 30px;">Create a new student section</p>
+            
+            <form method="POST" class="item-form">
+                <div class="form-group full-width">
+                    <label>🎓 Class Name *</label>
+                    <input type="text" name="name" required 
+                           placeholder="e.g., CSE 3rd Semester A" id="className">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>📅 Semester *</label>
+                        <select name="semester" required id="semesterSelect">
+                            <option value="">Select Semester</option>
+                            <option value="Semester 1">Semester 1</option>
+                            <option value="Semester 2">Semester 2</option>
+                            <option value="Semester 3">Semester 3</option>
+                            <option value="Semester 4">Semester 4</option>
+                            <option value="Semester 5">Semester 5</option>
+                            <option value="Semester 6">Semester 6</option>
+                            <option value="Semester 7">Semester 7</option>
+                            <option value="Semester 8">Semester 8</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🏢 Department *</label>
+                        <select name="department" required id="deptSelect">
+                            <option value="">Select Department</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Mechanical">Mechanical Engineering</option>
+                            <option value="Civil">Civil Engineering</option>
+                            <option value="Electrical">Electrical Engineering</option>
+                            <option value="Information Technology">Information Technology</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>👥 Number of Students *</label>
+                    <input type="number" name="num_students" required value="60" 
+                           min="1" max="200" id="studentsInput">
+                    <input type="range" min="1" max="200" value="60" 
+                           id="studentsRange" class="slider">
+                    <div class="slider-labels">
+                        <span>1</span>
+                        <span id="currentValue">60</span>
+                        <span>200</span>
+                    </div>
+                </div>
+
+                <!-- Class Size Indicator -->
+                <div class="class-size-indicator glass">
+                    <h3>📊 Class Size Analysis</h3>
+                    <div class="size-category" id="sizeCategory">
+                        <div class="category-icon">👥</div>
+                        <div class="category-name">Medium Class</div>
+                        <div class="category-desc">Ideal for regular instruction</div>
+                    </div>
+                    <div class="size-bars">
+                        <div class="size-bar">
+                            <div class="bar-header">
+                                <span>Small (1-30)</span>
+                                <span id="smallPercentage">0%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-bar-fill" id="smallBar"></div>
+                            </div>
+                        </div>
+                        <div class="size-bar">
+                            <div class="bar-header">
+                                <span>Medium (31-80)</span>
+                                <span id="mediumPercentage">75%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-bar-fill" id="mediumBar" style="width: 75%;"></div>
+                            </div>
+                        </div>
+                        <div class="size-bar">
+                            <div class="bar-header">
+                                <span>Large (81-200)</span>
+                                <span id="largePercentage">0%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-bar-fill" id="largeBar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview Card -->
+                <div class="class-preview glass">
+                    <h3>🎨 Class Preview</h3>
+                    <div class="preview-class-card">
+                        <div class="preview-icon">🎓</div>
+                        <h4 id="previewName">Class Name</h4>
+                        <div class="preview-badges">
+                            <span class="preview-badge" id="previewSemester">Semester</span>
+                            <span class="preview-badge" id="previewDept">Department</span>
+                        </div>
+                        <div class="preview-students">
+                            <div class="students-count" id="previewStudents">60</div>
+                            <div class="students-label">Students</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary glow-on-hover">
+                        💾 Save Class
+                    </button>
+                    <a href="{{ url_for('classes') }}" class="btn btn-secondary">
+                        ❌ Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const studentsInput = document.getElementById('studentsInput');
+        const studentsRange = document.getElementById('studentsRange');
+        const currentValue = document.getElementById('currentValue');
+
+        function syncSlider() {
+            studentsRange.value = studentsInput.value;
+            currentValue.textContent = studentsInput.value;
+            updateSizeIndicator(parseInt(studentsInput.value));
+            updatePreview();
+        }
+
+        function syncInput() {
+            studentsInput.value = studentsRange.value;
+            currentValue.textContent = studentsRange.value;
+            updateSizeIndicator(parseInt(studentsRange.value));
+            updatePreview();
+        }
+
+        studentsInput.addEventListener('input', syncSlider);
+        studentsRange.addEventListener('input', syncInput);
+
+        function updateSizeIndicator(count) {
+            const smallBar = document.getElementById('smallBar');
+            const mediumBar = document.getElementById('mediumBar');
+            const largeBar = document.getElementById('largeBar');
+            const sizeCategory = document.getElementById('sizeCategory');
+
+            // Reset all
+            smallBar.style.width = '0%';
+            mediumBar.style.width = '0%';
+            largeBar.style.width = '0%';
+
+            let categoryName, categoryDesc, categoryIcon;
+
+            if (count <= 30) {
+                smallBar.style.width = (count / 30 * 100) + '%';
+                document.getElementById('smallPercentage').textContent = '100%';
+                document.getElementById('mediumPercentage').textContent = '0%';
+                document.getElementById('largePercentage').textContent = '0%';
+                categoryName = 'Small Class';
+                categoryDesc = 'Perfect for personalized attention';
+                categoryIcon = '👤';
+            } else if (count <= 80) {
+                mediumBar.style.width = ((count - 30) / 50 * 100) + '%';
+                document.getElementById('smallPercentage').textContent = '0%';
+                document.getElementById('mediumPercentage').textContent = '100%';
+                document.getElementById('largePercentage').textContent = '0%';
+                categoryName = 'Medium Class';
+                categoryDesc = 'Ideal for regular instruction';
+                categoryIcon = '👥';
+            } else {
+                largeBar.style.width = ((count - 80) / 120 * 100) + '%';
+                document.getElementById('smallPercentage').textContent = '0%';
+                document.getElementById('mediumPercentage').textContent = '0%';
+                document.getElementById('largePercentage').textContent = '100%';
+                categoryName = 'Large Class';
+                categoryDesc = 'Best for lectures and seminars';
+                categoryIcon = '👨‍👩‍👧‍👦';
+            }
+
+            sizeCategory.innerHTML = `
+                <div class="category-icon">${categoryIcon}</div>
+                <div class="category-name">${categoryName}</div>
+                <div class="category-desc">${categoryDesc}</div>
+            `;
+        }
+
+        function updatePreview() {
+            const name = document.getElementById('className').value || 'Class Name';
+            const semester = document.getElementById('semesterSelect').value || 'Semester';
+            const dept = document.getElementById('deptSelect').value || 'Department';
+            const students = studentsInput.value;
+
+            document.getElementById('previewName').textContent = name;
+            document.getElementById('previewSemester').textContent = semester;
+            document.getElementById('previewDept').textContent = dept;
+            document.getElementById('previewStudents').textContent = students;
+        }
+
+        document.getElementById('className').addEventListener('input', updatePreview);
+        document.getElementById('semesterSelect').addEventListener('change', updatePreview);
+        document.getElementById('deptSelect').addEventListener('change', updatePreview);
+
+        // Initialize
+        updateSizeIndicator(60);
+        updatePreview();
+    </script>
+
+    <style>
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            outline: none;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            margin: 15px 0;
+        }
+
+        .slider:hover {
+            opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #666;
+        }
+
+        #currentValue {
+            font-weight: 700;
+            font-size: 18px;
+            color: #667eea;
+        }
+
+        .class-size-indicator {
+            padding: 25px;
+            border-radius: 15px;
+            margin: 25px 0;
+        }
+
+        .class-size-indicator h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .size-category {
+            text-align: center;
+            padding: 25px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .category-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .category-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .category-desc {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .size-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .size-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .bar-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .class-preview {
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 25px 0;
+        }
+
+        .class-preview h3 {
+            color: #333;
+            margin-bottom: 25px;
+        }
+
+        .preview-class-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05));
+            padding: 30px;
+            border-radius: 20px;
+            border: 2px dashed rgba(102, 126, 234, 0.3);
+        }
+
+        .preview-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+            animation: float-icon 3s ease-in-out infinite;
+        }
+
+        .preview-class-card h4 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .preview-badges {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .preview-badge {
+            padding: 8px 16px;
+            background: white;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .preview-students {
+            margin-top: 20px;
+        }
+
+        .students-count {
+            font-size: 48px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .students-label {
+            font-size: 14px;
+            color: #999;
+            text-transform: uppercase;
+        }
+    </style>
+</body>
+</html>

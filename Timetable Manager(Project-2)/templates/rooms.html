@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rooms Management - Timetable System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-brand gradient-text">📅 Timetable Manager</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+            <a href="{{ url_for('teachers') }}">👨‍🏫 Teachers</a>
+            <a href="{{ url_for('subjects') }}">📚 Subjects</a>
+            <a href="{{ url_for('rooms') }}" class="active">🏛️ Rooms</a>
+            <a href="{{ url_for('classes') }}">🎓 Classes</a>
+            <a href="{{ url_for('generate_timetable') }}">⚡ Generate</a>
+            <a href="{{ url_for('analytics') }}">📊 Analytics</a>
+            <a href="{{ url_for('settings') }}">⚙️ Settings</a>
+            <a href="{{ url_for('logout') }}" style="color: #f44336;">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header fade-in-up">
+            <div>
+                <h1 class="gradient-text">🏛️ Rooms Management</h1>
+                <p style="color: white; margin-top: 8px;">Manage your venues and facilities</p>
+            </div>
+            <a href="{{ url_for('add_room') }}" class="btn btn-primary glow-on-hover">
+                ➕ Add New Room
+            </a>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs glass fade-in-up" style="animation-delay: 0.1s;">
+            <button class="tab-btn active" onclick="filterRooms('all')">
+                🏛️ All Rooms
+            </button>
+            <button class="tab-btn" onclick="filterRooms('Classroom')">
+                📖 Classrooms
+            </button>
+            <button class="tab-btn" onclick="filterRooms('Lab')">
+                🔬 Labs
+            </button>
+            <button class="tab-btn" onclick="filterRooms('Lecture Hall')">
+                🎭 Lecture Halls
+            </button>
+            <button class="tab-btn" onclick="filterRooms('Seminar Hall')">
+                💼 Seminar Halls
+            </button>
+        </div>
+
+        <!-- Search -->
+        <div class="search-section glass fade-in-up" style="animation-delay: 0.2s;">
+            <input type="text" id="searchInput" placeholder="🔍 Search rooms..." 
+                   class="search-input" onkeyup="searchRooms()">
+            <select id="capacityFilter" class="category-filter" onchange="filterByCapacity()">
+                <option value="">All Capacities</option>
+                <option value="small">Small (< 40)</option>
+                <option value="medium">Medium (40-80)</option>
+                <option value="large">Large (> 80)</option>
+            </select>
+        </div>
+
+        <!-- Rooms Grid -->
+        <div class="rooms-grid fade-in-up" style="animation-delay: 0.3s;">
+            {% for room in rooms %}
+            <div class="room-card glass zoom-hover card-3d" 
+                 data-type="{{ room['room_type'] }}" 
+                 data-capacity="{{ room['capacity'] }}">
+                <div class="room-header">
+                    <div class="room-icon-large">🏛️</div>
+                    <div class="room-type-badge {{ room['room_type'].lower().replace(' ', '-') }}">
+                        {{ room['room_type'] }}
+                    </div>
+                </div>
+                
+                <h3 class="room-number">{{ room['room_number'] }}</h3>
+                <p class="room-name">{{ room['name'] }}</p>
+                
+                <div class="room-capacity">
+                    <div class="capacity-icon">👥</div>
+                    <div class="capacity-value">{{ room['capacity'] }}</div>
+                    <div class="capacity-label">Capacity</div>
+                </div>
+                
+                <div class="room-facilities">
+                    {% if room['has_projector'] %}
+                    <span class="facility-badge available">
+                        📽️ Projector
+                    </span>
+                    {% else %}
+                    <span class="facility-badge unavailable">
+                        📽️ No Projector
+                    </span>
+                    {% endif %}
+                    
+                    {% if room['has_lab_equipment'] %}
+                    <span class="facility-badge available">
+                        🔬 Lab Equipment
+                    </span>
+                    {% else %}
+                    <span class="facility-badge unavailable">
+                        🔬 No Lab Equipment
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <div class="room-actions">
+                    <button onclick="viewRoomSchedule({{ room['id'] }})" 
+                            class="btn btn-sm btn-info">
+                        📅 Schedule
+                    </button>
+                    <button onclick="deleteRoom({{ room['id'] }}, '{{ room['room_number'] }}')" 
+                            class="btn btn-sm btn-danger">
+                        🗑️ Delete
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if not rooms %}
+        <div class="empty-state glass fade-in-up">
+            <div class="empty-icon">🏛️</div>
+            <h2>No Rooms Added Yet</h2>
+            <p>Start by adding your first venue</p>
+            <a href="{{ url_for('add_room') }}" class="btn btn-primary">
+                ➕ Add First Room
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Quick Stats -->
+        <div class="quick-stats glass fade-in-up" style="animation-delay: 0.4s;">
+            <h3>📊 Room Statistics</h3>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-label">Total Rooms</div>
+                    <div class="stat-value">{{ rooms|length }}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Total Capacity</div>
+                    <div class="stat-value">
+                        {% set total_capacity = rooms|sum(attribute='capacity') %}
+                        {{ total_capacity }}
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">With Projector</div>
+                    <div class="stat-value">
+                        {% set projector_count = rooms|selectattr('has_projector')|list|length %}
+                        {{ projector_count }}
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Labs</div>
+                    <div class="stat-value">
+                        {% set lab_count = rooms|selectattr('has_lab_equipment')|list|length %}
+                        {{ lab_count }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function filterRooms(type) {
+            const cards = document.querySelectorAll('.room-card');
+            const tabs = document.querySelectorAll('.tab-btn');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            cards.forEach(card => {
+                if (type === 'all' || card.dataset.type === type) {
+                    card.style.display = 'block';
+                    card.style.animation = 'fadeInScale 0.5s ease-out';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function searchRooms() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const cards = document.querySelectorAll('.room-card');
+            
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(input) ? 'block' : 'none';
+            });
+        }
+
+        function filterByCapacity() {
+            const filter = document.getElementById('capacityFilter').value;
+            const cards = document.querySelectorAll('.room-card');
+            
+            cards.forEach(card => {
+                const capacity = parseInt(card.dataset.capacity);
+                let show = true;
+                
+                if (filter === 'small') show = capacity < 40;
+                else if (filter === 'medium') show = capacity >= 40 && capacity <= 80;
+                else if (filter === 'large') show = capacity > 80;
+                
+                card.style.display = show ? 'block' : 'none';
+            });
+        }
+
+        function viewRoomSchedule(id) {
+            alert('Room schedule view will show all bookings for this room.');
+        }
+
+        function deleteRoom(id, roomNumber) {
+            if (confirm(`Delete room ${roomNumber}?\n\nThis will affect all timetable entries.`)) {
+                fetch(`/rooms/delete/${id}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Room deleted successfully!', 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification('Error: ' + data.error, 'error');
+                    }
+                });
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type} slide-in-right`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed; top: 20px; right: 20px; padding: 15px 25px;
+                background: ${type === 'success' ? '#4caf50' : '#f44336'};
+                color: white; border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 10000;
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+    </script>
+
+    <style>
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .room-card {
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            border-left: 5px solid #667eea;
+        }
+
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .room-icon-large {
+            font-size: 56px;
+            animation: float-icon 3s ease-in-out infinite;
+        }
+
+        .room-type-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .room-type-badge.classroom {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            color: #1976d2;
+        }
+
+        .room-type-badge.lab {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            color: #2e7d32;
+        }
+
+        .room-type-badge.lecture-hall {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            color: #ef6c00;
+        }
+
+        .room-type-badge.seminar-hall {
+            background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+            color: #7b1fa2;
+        }
+
+        .room-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .room-name {
+            color: #666;
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+
+        .room-capacity {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .capacity-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .capacity-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .capacity-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .room-facilities {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .facility-badge {
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .facility-badge.available {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            color: #2e7d32;
+        }
+
+        .facility-badge.unavailable {
+            background: linear-gradient(135deg, #ffebee, #ffcdd2);
+            color: #c62828;
+            opacity: 0.6;
+        }
+
+        .room-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #2196F3, #64B5F6);
+            color: white;
+        }
+
+        .quick-stats {
+            padding: 30px;
+            border-radius: 20px;
+            margin-top: 30px;
+        }
+
+        .quick-stats h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 15px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .rooms-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>
